@@ -1,3 +1,7 @@
+## Introduction
+
+The app is designed to help users achieve "Flow state" by preventing editing and forcing continuous writing.
+
 ## Run Locally
 
 **Prerequisites:**  Node.js
