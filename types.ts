@@ -29,7 +29,13 @@ export const translations = {
     saveChanges: "Save Changes",
     dontLookBack: "Don't look back, keep flowing.",
     entrySealed: "Entry sealed.",
-    thoughtRefined: "Thought refined and saved."
+    thoughtRefined: "Thought refined and saved.",
+    refine: "Refine typos",
+    refining: "Refining...",
+    original: "Original",
+    polished: "Polished Version",
+    usePolished: "Apply Refinement",
+    aiRefineError: "Refinement failed. Please try again."
   },
   zh: {
     finishAndSeal: "完成并封存",
@@ -50,6 +56,12 @@ export const translations = {
     saveChanges: "保存修改",
     dontLookBack: "不要回头，保持心流。",
     entrySealed: "灵感已封存。",
-    thoughtRefined: "灵感已优化并保存。"
+    thoughtRefined: "灵感已优化并保存。",
+    refine: "修正错字",
+    refining: "正在修正...",
+    original: "原始版",
+    polished: "修正版",
+    usePolished: "应用修正",
+    aiRefineError: "修正失败，请重试。"
   }
 };

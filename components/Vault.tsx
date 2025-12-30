@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FlowNoteEntry, Language, translations } from '../types';
+import { GoogleGenAI } from "@google/genai";
 
 interface VaultProps {
   entries: FlowNoteEntry[];
@@ -13,7 +14,14 @@ const VaultItem: React.FC<{ entry: FlowNoteEntry; onUpdate: (id: string, content
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
   const [editContent, setEditContent] = useState(entry.content);
+  const [polishedContent, setPolishedContent] = useState<string | null>(null);
+
+  // Sync internal edit buffer when entry content changes (e.g., after AI refinement)
+  useEffect(() => {
+    setEditContent(entry.content);
+  }, [entry.content]);
 
   useEffect(() => {
     const update = () => {
@@ -36,6 +44,45 @@ const VaultItem: React.FC<{ entry: FlowNoteEntry; onUpdate: (id: string, content
   const handleCancel = () => {
     setEditContent(entry.content);
     setIsEditing(false);
+    setPolishedContent(null);
+  };
+
+  const handleApplyPolished = () => {
+    if (polishedContent) {
+      onUpdate(entry.id, polishedContent);
+      setPolishedContent(null);
+      setIsRefining(false);
+    }
+  };
+
+  const handleRefine = async () => {
+    setIsRefining(true);
+    setPolishedContent(null);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: entry.content,
+        config: {
+          systemInstruction: `You are a precision proofreader. 
+          Tasks: 
+          1. Fix ONLY obvious typos and spelling mistakes.
+          2. Remove unintentional duplicate words (e.g., "the the").
+          3. DO NOT change vocabulary, style, tone, or sentence structure.
+          4. DO NOT add missing punctuation unless it's a critical error.
+          5. Return ONLY the corrected text without any commentary or explanations.`,
+        },
+      });
+      const text = response.text;
+      if (text) {
+        setPolishedContent(text.trim());
+      }
+    } catch (error) {
+      console.error("AI Refinement Error:", error);
+      alert(t.aiRefineError);
+    } finally {
+      setIsRefining(false);
+    }
   };
 
   const formatTimeRemaining = (ms: number) => {
@@ -71,13 +118,23 @@ const VaultItem: React.FC<{ entry: FlowNoteEntry; onUpdate: (id: string, content
           ) : (
             <div className="flex items-center gap-3">
                {!isEditing && isExpanded && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-                  className="opacity-40 hover:opacity-100 transition-opacity p-1"
-                  title="Edit entry"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleRefine(); }}
+                    disabled={isRefining}
+                    className={`opacity-40 hover:opacity-100 transition-opacity p-1 ${isRefining ? 'animate-pulse' : ''}`}
+                    title={t.refine}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 16 6-12 6 12"></path><path d="M8 12h8"></path><path d="m16 20 2 2 4-4"></path></svg>
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                    className="opacity-40 hover:opacity-100 transition-opacity p-1"
+                    title="Edit entry"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                </div>
               )}
               <div className="text-green-500/80">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
@@ -88,9 +145,9 @@ const VaultItem: React.FC<{ entry: FlowNoteEntry; onUpdate: (id: string, content
       </div>
 
       {!isLocked && isExpanded && (
-        <div className="mt-6 p-6 bg-current/5 rounded-lg text-current animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
           {isEditing ? (
-            <div className="flex flex-col gap-4">
+            <div className="p-6 bg-current/5 rounded-lg flex flex-col gap-4">
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
@@ -112,9 +169,49 @@ const VaultItem: React.FC<{ entry: FlowNoteEntry; onUpdate: (id: string, content
                 </button>
               </div>
             </div>
+          ) : polishedContent ? (
+            <div className="flex flex-col gap-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-2">
+                  <span className="text-[10px] uppercase tracking-widest opacity-30 px-4">{t.original}</span>
+                  <div className="p-6 bg-current/5 border border-current/5 rounded-lg leading-relaxed font-light text-xl whitespace-pre-wrap opacity-60">
+                    {entry.content}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-[10px] uppercase tracking-widest opacity-60 text-indigo-400 px-4 font-bold">{t.polished}</span>
+                  <div className="p-6 bg-current/[0.08] border border-indigo-400/20 rounded-lg leading-relaxed font-light text-xl whitespace-pre-wrap">
+                    {polishedContent}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => setPolishedContent(null)}
+                  className="px-4 py-2 text-xs uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+                >
+                  {t.cancel}
+                </button>
+                <button 
+                  onClick={handleApplyPolished}
+                  className="px-4 py-2 text-xs uppercase tracking-widest btn-primary-filled rounded transition-all shadow-lg"
+                >
+                  {t.usePolished}
+                </button>
+              </div>
+            </div>
           ) : (
-            <div className="leading-relaxed font-light text-xl whitespace-pre-wrap opacity-80">
-              {entry.content}
+            <div className="p-6 bg-current/5 rounded-lg text-current">
+              <div className="leading-relaxed font-light text-xl whitespace-pre-wrap opacity-80">
+                {isRefining ? (
+                  <div className="flex items-center gap-3 py-4 text-sm opacity-40 tracking-widest uppercase italic">
+                    <div className="w-2 h-2 rounded-full bg-current animate-bounce"></div>
+                    {t.refining}
+                  </div>
+                ) : (
+                  entry.content
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -67,26 +67,82 @@ const Editor: React.FC<EditorProps> = ({ onFinish, onToast, lang }) => {
     }
   };
 
-  const TimeColumn = ({ label, value, setter, max }: { label: string, value: number, setter: (v: number) => void, max: number }) => (
-    <div className="flex flex-col items-center gap-2">
-      <span className="text-[10px] uppercase tracking-[0.2em] opacity-40">{label}</span>
-      <div className="flex flex-col items-center">
-        <button 
-          onClick={() => setter(Math.min(max, value + 1))}
-          className="p-2 opacity-30 hover:opacity-100 transition-opacity"
-        >
-          <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 11L10 2L19 11" stroke="currentColor" strokeWidth="2"/></svg>
-        </button>
-        <span className="text-4xl font-light font-mono w-16 text-center">{value.toString().padStart(2, '0')}</span>
-        <button 
-          onClick={() => setter(Math.max(0, value - 1))}
-          className="p-2 opacity-30 hover:opacity-100 transition-opacity"
-        >
-          <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 1L10 10L1 1" stroke="currentColor" strokeWidth="2"/></svg>
-        </button>
+  const TimeColumn = ({ label, value, setter, max }: { label: string, value: number, setter: (v: number) => void, max: number }) => {
+    const [isFocused, setIsFocused] = useState(false);
+    const [inputValue, setInputValue] = useState(value.toString());
+
+    // Sync input when external value changes (via arrows)
+    useEffect(() => {
+      if (!isFocused) {
+        setInputValue(value.toString());
+      }
+    }, [value, isFocused]);
+
+    const commitValue = () => {
+      let num = parseInt(inputValue, 10);
+      if (isNaN(num)) {
+        setter(0);
+        setInputValue("0");
+      } else {
+        if (num > max) num = max;
+        if (num < 0) num = 0;
+        setter(num);
+        setInputValue(num.toString());
+      }
+      setIsFocused(false);
+    };
+
+    const handleKeyDownInternal = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        commitValue();
+      }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      // Allow only numbers and restrict length to a reasonable amount (e.g., 2-3 digits)
+      if (/^\d*$/.test(val)) {
+        setInputValue(val);
+      }
+    };
+
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-[10px] uppercase tracking-[0.2em] opacity-40">{label}</span>
+        <div className="flex flex-col items-center">
+          <button 
+            onClick={() => setter(Math.min(max, value + 1))}
+            className="p-2 opacity-30 hover:opacity-100 transition-opacity"
+          >
+            <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 11L10 2L19 11" stroke="currentColor" strokeWidth="2"/></svg>
+          </button>
+          
+          <input
+            type="text"
+            inputMode="numeric"
+            value={isFocused ? inputValue : value.toString().padStart(2, '0')}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDownInternal}
+            onFocus={(e) => {
+              setIsFocused(true);
+              setInputValue(value.toString());
+              e.target.select();
+            }}
+            onBlur={commitValue}
+            className="text-4xl font-light font-mono w-16 text-center bg-transparent border-none outline-none focus:ring-0 appearance-none"
+          />
+
+          <button 
+            onClick={() => setter(Math.max(0, value - 1))}
+            className="p-2 opacity-30 hover:opacity-100 transition-opacity"
+          >
+            <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 1L10 10L1 1" stroke="currentColor" strokeWidth="2"/></svg>
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="w-full flex flex-col items-center relative">
@@ -116,11 +172,11 @@ const Editor: React.FC<EditorProps> = ({ onFinish, onToast, lang }) => {
               <h3 className="text-xs tracking-[0.3em] uppercase opacity-60">{t.setSealDuration}</h3>
               
               <div className="flex gap-4">
-                <TimeColumn label={t.hours} value={hours} setter={setHours} max={23} />
+                <TimeColumn label={t.hours} value={hours} setter={setHours} max={24} />
                 <div className="text-4xl self-center mt-4 opacity-20">:</div>
-                <TimeColumn label={t.min} value={minutes} setter={setMinutes} max={59} />
+                <TimeColumn label={t.min} value={minutes} setter={setMinutes} max={60} />
                 <div className="text-4xl self-center mt-4 opacity-20">:</div>
-                <TimeColumn label={t.sec} value={seconds} setter={setSeconds} max={59} />
+                <TimeColumn label={t.sec} value={seconds} setter={setSeconds} max={60} />
               </div>
 
               <div className="flex gap-6 mt-4 w-full">
