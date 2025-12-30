@@ -106,7 +106,7 @@ const VaultItem: React.FC<{ entry: FlowNoteEntry; onUpdate: (id: string, content
                 </button>
                 <button 
                   onClick={handleSave}
-                  className="px-4 py-2 text-xs uppercase tracking-widest bg-current text-white dark:text-black rounded transition-colors"
+                  className="px-4 py-2 text-xs uppercase tracking-widest btn-primary-filled rounded transition-colors"
                 >
                   {t.saveChanges}
                 </button>

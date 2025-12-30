@@ -132,7 +132,7 @@ const Editor: React.FC<EditorProps> = ({ onFinish, onToast, lang }) => {
                 </button>
                 <button 
                   onClick={handleConfirmSeal}
-                  className="flex-1 py-3 text-xs uppercase tracking-widest bg-current text-white dark:text-black rounded-full font-bold hover:bg-opacity-90 transition-all shadow-lg"
+                  className="flex-1 py-3 text-xs uppercase tracking-widest btn-primary-filled rounded-full font-bold hover:bg-opacity-90 transition-all shadow-lg"
                 >
                   {t.seal}
                 </button>
@@ -148,7 +148,7 @@ const Editor: React.FC<EditorProps> = ({ onFinish, onToast, lang }) => {
             onClick={() => setShowTimerPicker(true)}
             disabled={!content.trim()}
             className={`px-8 py-3 rounded-full border border-current/20 text-sm tracking-widest uppercase transition-all
-              ${content.trim() ? 'hover:bg-current hover:text-white dark:hover:text-black cursor-pointer' : 'opacity-20 cursor-not-allowed'}
+              ${content.trim() ? 'hover:btn-primary-filled cursor-pointer' : 'opacity-20 cursor-not-allowed'}
             `}
           >
             {t.finishAndSeal}

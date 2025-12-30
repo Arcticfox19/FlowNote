@@ -8,9 +8,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #222;
+            --text-color: #ddd;
+        }
         body {
             font-family: 'Merriweather', serif;
             transition: background-color 0.5s ease, color 0.5s ease;
+            background-color: var(--bg-color);
+            color: var(--text-color);
         }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -33,9 +39,29 @@
         }
         
         /* Theme Definitions */
-        .theme-dark { background-color: #222; color: #ddd; }
-        .theme-warm { background-color: #f4f1ea; color: #5c4b37; }
-        .theme-blue { background-color: #f0f7ff; color: #2d3748; }
+        .theme-dark { 
+            --bg-color: #222; 
+            --text-color: #ddd; 
+        }
+        .theme-warm { 
+            --bg-color: #f4f1ea; 
+            --text-color: #5c4b37; 
+        }
+        .theme-blue { 
+            --bg-color: #f0f7ff; 
+            --text-color: #2d3748; 
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        /* Helper class for filled buttons to ensure contrast */
+        .btn-primary-filled {
+            background-color: var(--text-color) !important;
+            color: var(--bg-color) !important;
+        }
 
         .theme-dark .secondary-ui { background-color: rgba(255,255,255,0.05); }
         .theme-warm .secondary-ui { background-color: rgba(0,0,0,0.03); }
